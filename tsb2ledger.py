@@ -5,6 +5,8 @@ import sys
 from datetime import datetime
 from decimal import Decimal
 
+from itertools import islice
+
 
 class Transaction:
     def __init__(self, row):
@@ -15,7 +17,7 @@ class Transaction:
         self._description = row[4]
         self._debit = make_decimal(row[5])
         self._credit = make_decimal(row[6])
-        self._amount = make_decimal(row[7])
+        self._balance = make_decimal(row[7])
         self._row = ', '.join(row)
 
     def formatted_date(self):
@@ -25,7 +27,7 @@ class Transaction:
         result = "; " + self._row + "\n"
         result += self.formatted_date() + " " + self._description + "\n"
         result += "    " + "Unknown" + "    " + "£{0:3}".format(self._debit - self._credit) + "\n"
-        result += "    " + "Assets:TSB" + "\n"
+        result += "    " + "Assets:TSB      " + "£{0:3} = £{1:3}".format(self._credit - self._debit, self._balance) + "\n"
 
         return result
 
@@ -41,9 +43,7 @@ def main():
     with open(sys.argv[1], newline='') as csvFile:
         reader = csv.reader(csvFile, dialect='excel')
 
-        next(reader)  # Skip past title
-
-        for row in reader:
+        for row in reversed(list(islice(reader, 1, None))):
             transaction = Transaction(row)
             print(transaction.to_ledger())
 

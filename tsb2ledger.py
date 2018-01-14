@@ -26,8 +26,8 @@ class Transaction:
     def to_ledger(self):
         result = "; " + self._row + "\n"
         result += self.formatted_date() + " " + self._description + "\n"
-        result += "    " + "Unknown" + "    " + "£{0:3}".format(self._debit - self._credit) + "\n"
-        result += "    " + "Assets:TSB      " + "£{0:3} = £{1:3}".format(self._credit - self._debit, self._balance) + "\n"
+        result += "    Unknown        £{0:3}\n".format(self._debit - self._credit)
+        result += "    Assets:TSB     £{0:3} = £{1:3}\n".format(self._credit - self._debit, self._balance)
 
         return result
 

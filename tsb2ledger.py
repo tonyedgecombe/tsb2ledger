@@ -8,23 +8,23 @@ from decimal import Decimal
 
 class Transaction:
     def __init__(self, row):
-        self.date = datetime.strptime(row[0], "%d/%m/%Y").date()
-        self.type = row[1]
-        self.sort_code = row[2]
-        self.account = row[3]
-        self.description = row[4]
-        self.debit = make_decimal(row[5])
-        self.credit = make_decimal(row[6])
-        self.amount = make_decimal(row[7])
-        self.row = ', '.join(row)
+        self._date = datetime.strptime(row[0], "%d/%m/%Y").date()
+        self._type = row[1]
+        self._sort_code = row[2]
+        self._account = row[3]
+        self._description = row[4]
+        self._debit = make_decimal(row[5])
+        self._credit = make_decimal(row[6])
+        self._amount = make_decimal(row[7])
+        self._row = ', '.join(row)
 
     def formatted_date(self):
-        return self.date.strftime("%Y/%m/%d")
+        return self._date.strftime("%Y/%m/%d")
 
     def to_ledger(self):
-        result = "; " + self.row + "\n"
-        result += self.formatted_date() + " " + self.description + "\n"
-        result += "    " + "Unknown" + "    " + "£{0:3}".format(self.debit - self.credit) + "\n"
+        result = "; " + self._row + "\n"
+        result += self.formatted_date() + " " + self._description + "\n"
+        result += "    " + "Unknown" + "    " + "£{0:3}".format(self._debit - self._credit) + "\n"
         result += "    " + "Assets:TSB" + "\n"
 
         return result

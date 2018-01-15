@@ -7,6 +7,8 @@ from decimal import Decimal
 
 from itertools import islice
 
+import re
+
 
 class Transaction:
     def __init__(self, row):
@@ -14,11 +16,18 @@ class Transaction:
         self._type = row[1]
         self._sort_code = row[2]
         self._account = row[3]
-        self._description = row[4]
+        self._description, self._category = self.lookup_details(row[4])
         self._debit = make_decimal(row[5])
         self._credit = make_decimal(row[6])
         self._balance = make_decimal(row[7])
         self._row = ', '.join(row)
+
+    # noinspection SpellCheckingInspection,PyMethodMayBeStatic
+    def lookup_details(self, description):
+        if re.match("^SAINSBURYS PETROL CD \d{4}\s*$", description):
+            return "Sainsbury's", "Expense:Petrol"
+
+        return description, "Unknown"
 
     def formatted_date(self):
         return self._date.strftime("%Y/%m/%d")
@@ -26,7 +35,7 @@ class Transaction:
     def to_ledger(self):
         result = "; " + self._row + "\n"
         result += self.formatted_date() + " " + self._description + "\n"
-        result += "    Unknown        £{0:3}\n".format(self._debit - self._credit)
+        result += "    {0}        £{1:3}\n".format(self._category, self._debit - self._credit)
         result += "    Assets:TSB     £{0:3} = £{1:3}\n".format(self._credit - self._debit, self._balance)
 
         return result

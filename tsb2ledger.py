@@ -47,13 +47,13 @@ def to_ledger(transaction):
     return result
 
 
-def read_csv_file():
-    with open(sys.argv[1], newline='') as csvFile:
+def read_csv_file(path):
+    with open(path, newline='') as csvFile:
         reader = csv.reader(csvFile, dialect='excel')
 
         for row in reversed(list(islice(reader, 1, None))):
             desc, category = lookup_category_details(row[4])
-            transaction = Transaction(
+            yield Transaction(
                 date=datetime.strptime(row[0], "%d/%m/%Y").strftime("%Y/%m/%d"),
                 description=desc,
                 category=category,
@@ -63,14 +63,12 @@ def read_csv_file():
                 row=', '.join(row)
             )
 
-            yield transaction
-
 
 def main():
     if len(sys.argv) != 2:
         raise Exception('Syntax: tsb2ledger <file.csv>')
 
-    for transaction in read_csv_file():
+    for transaction in read_csv_file(sys.argv[1]):
         print(to_ledger(transaction))
 
 

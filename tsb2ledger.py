@@ -65,8 +65,6 @@ def main():
     if len(sys.argv) != 2:
         raise Exception('Syntax: tsb2ledger <file.csv>')
 
-    read_categories()
-
     with open(sys.argv[1], newline='') as csvFile:
         reader = csv.reader(csvFile, dialect='excel')
 

@@ -3,9 +3,12 @@
 import csv
 import re
 import sys
+from collections import namedtuple
 from datetime import datetime
 from decimal import Decimal
 from itertools import islice
+
+Transaction = namedtuple("Transaction", "date, description, category, debit, credit, balance, row")
 
 
 def read_categories():
@@ -35,29 +38,13 @@ def make_decimal(value):
     return Decimal(value if len(value.strip()) else 0)
 
 
-class Transaction:
+def to_ledger(transaction):
+    result = "; {0}\n".format(transaction.row)
+    result += "{0}, {1}\n".format(transaction.date, transaction.description)
+    result += "    {0}        £{1:3}\n".format(transaction.category, transaction.debit - transaction.credit)
+    result += "    Assets:TSB     £{0:3} = £{1:3}\n".format(transaction.credit - transaction.debit, transaction.balance)
 
-    def __init__(self, row):
-        self._date = datetime.strptime(row[0], "%d/%m/%Y").date()
-        self._type = row[1]
-        self._sort_code = row[2]
-        self._account = row[3]
-        self._description, self._category = lookup_category_details(row[4])
-        self._debit = make_decimal(row[5])
-        self._credit = make_decimal(row[6])
-        self._balance = make_decimal(row[7])
-        self._row = ', '.join(row)
-
-    def formatted_date(self):
-        return self._date.strftime("%Y/%m/%d")
-
-    def to_ledger(self):
-        result = "; " + self._row + "\n"
-        result += self.formatted_date() + " " + self._description + "\n"
-        result += "    {0}        £{1:3}\n".format(self._category, self._debit - self._credit)
-        result += "    Assets:TSB     £{0:3} = £{1:3}\n".format(self._credit - self._debit, self._balance)
-
-        return result
+    return result
 
 
 def read_csv_file():
@@ -65,15 +52,26 @@ def read_csv_file():
         reader = csv.reader(csvFile, dialect='excel')
 
         for row in reversed(list(islice(reader, 1, None))):
-            transaction = Transaction(row)
-            print(transaction.to_ledger())
+            desc, category = lookup_category_details(row[4])
+            transaction = Transaction(
+                date=datetime.strptime(row[0], "%d/%m/%Y").strftime("%Y/%m/%d"),
+                description=desc,
+                category=category,
+                debit=make_decimal(row[5]),
+                credit=make_decimal(row[6]),
+                balance=make_decimal(row[7]),
+                row=', '.join(row)
+            )
+
+            yield transaction
 
 
 def main():
     if len(sys.argv) != 2:
         raise Exception('Syntax: tsb2ledger <file.csv>')
 
-    read_csv_file()
+    for transaction in read_csv_file():
+        print(to_ledger(transaction))
 
 
 if __name__ == "__main__":

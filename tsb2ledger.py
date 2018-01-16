@@ -1,49 +1,11 @@
 #!/usr/local/bin/python3
 
 import csv
-import sys
 import re
-
+import sys
 from datetime import datetime
 from decimal import Decimal
 from itertools import islice
-
-
-class Transaction:
-    def __init__(self, row):
-        self._date = datetime.strptime(row[0], "%d/%m/%Y").date()
-        self._type = row[1]
-        self._sort_code = row[2]
-        self._account = row[3]
-        self._description, self._category = self.lookup_details(row[4])
-        self._debit = make_decimal(row[5])
-        self._credit = make_decimal(row[6])
-        self._balance = make_decimal(row[7])
-        self._row = ', '.join(row)
-
-    # noinspection PyMethodMayBeStatic
-    def lookup_details(self, description):
-
-        for entry in categories:
-            if re.match(entry["expression"], description):
-                return entry["description"], entry["category"]
-
-        raise Exception("Unknown description: {0}".format(description))
-
-    def formatted_date(self):
-        return self._date.strftime("%Y/%m/%d")
-
-    def to_ledger(self):
-        result = "; " + self._row + "\n"
-        result += self.formatted_date() + " " + self._description + "\n"
-        result += "    {0}        £{1:3}\n".format(self._category, self._debit - self._credit)
-        result += "    Assets:TSB     £{0:3} = £{1:3}\n".format(self._credit - self._debit, self._balance)
-
-        return result
-
-
-def make_decimal(value):
-    return Decimal(value if len(value.strip()) else 0)
 
 
 def read_categories():
@@ -61,16 +23,57 @@ def read_categories():
 categories = list(read_categories())
 
 
-def main():
-    if len(sys.argv) != 2:
-        raise Exception('Syntax: tsb2ledger <file.csv>')
+def lookup_category_details(description):
+    for entry in categories:
+        if re.match(entry["expression"], description):
+            return entry["description"], entry["category"]
 
+    raise Exception("Unknown description: {0}".format(description))
+
+
+def make_decimal(value):
+    return Decimal(value if len(value.strip()) else 0)
+
+
+class Transaction:
+
+    def __init__(self, row):
+        self._date = datetime.strptime(row[0], "%d/%m/%Y").date()
+        self._type = row[1]
+        self._sort_code = row[2]
+        self._account = row[3]
+        self._description, self._category = lookup_category_details(row[4])
+        self._debit = make_decimal(row[5])
+        self._credit = make_decimal(row[6])
+        self._balance = make_decimal(row[7])
+        self._row = ', '.join(row)
+
+    def formatted_date(self):
+        return self._date.strftime("%Y/%m/%d")
+
+    def to_ledger(self):
+        result = "; " + self._row + "\n"
+        result += self.formatted_date() + " " + self._description + "\n"
+        result += "    {0}        £{1:3}\n".format(self._category, self._debit - self._credit)
+        result += "    Assets:TSB     £{0:3} = £{1:3}\n".format(self._credit - self._debit, self._balance)
+
+        return result
+
+
+def read_csv_file():
     with open(sys.argv[1], newline='') as csvFile:
         reader = csv.reader(csvFile, dialect='excel')
 
         for row in reversed(list(islice(reader, 1, None))):
             transaction = Transaction(row)
             print(transaction.to_ledger())
+
+
+def main():
+    if len(sys.argv) != 2:
+        raise Exception('Syntax: tsb2ledger <file.csv>')
+
+    read_csv_file()
 
 
 if __name__ == "__main__":

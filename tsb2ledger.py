@@ -48,8 +48,8 @@ def to_ledger(transaction):
 
 
 def read_csv_file(path):
-    with open(path, newline='') as csvFile:
-        reader = csv.reader(csvFile, dialect='excel')
+    with open(path, newline='') as csv_file:
+        reader = csv.reader(csv_file, dialect='excel')
 
         for row in reversed(list(islice(reader, 1, None))):
             desc, category = lookup_category_details(row[4])

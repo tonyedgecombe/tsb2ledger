@@ -40,7 +40,7 @@ def make_decimal(value):
 
 def to_ledger(transaction):
     result = "; {0}\n".format(transaction.row)
-    result += "{0}, {1}\n".format(transaction.date, transaction.description)
+    result += "{0} {1}\n".format(transaction.date, transaction.description)
     result += "    {0}        £{1:3}\n".format(transaction.category, transaction.debit - transaction.credit)
     result += "    Assets:TSB     £{0:3} = £{1:3}\n".format(transaction.credit - transaction.debit, transaction.balance)
 

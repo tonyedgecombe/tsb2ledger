@@ -11,6 +11,9 @@ from itertools import islice
 Transaction = namedtuple("Transaction", "date, description, category, debit, credit, balance, row")
 
 
+def make_decimal(value):
+    return Decimal(value if len(value.strip()) else 0)
+
 def read_categories():
     with open("categories.txt", newline='') as csv_file:
         reader = csv.reader(csv_file, dialect='excel')
@@ -19,28 +22,26 @@ def read_categories():
             yield {
                 "expression": row[0],
                 "description": row[1],
-                "category": row[2]
+                "category": row[2],
+                "amount": make_decimal(row[3]) if len(row) > 3 else Decimal(0)
             }
 
 
 categories = list(read_categories())
 
 
-def lookup_category_details(description):
+def lookup_category_details(description, amount):
     for entry in categories:
-        if re.match(entry["expression"], description):
+        if re.match(entry["expression"], description) and (entry["amount"] == 0 or entry["amount"] == amount):
             return entry["description"], entry["category"]
 
     raise Exception("Unknown description: {0}".format(description))
 
 
-def make_decimal(value):
-    return Decimal(value if len(value.strip()) else 0)
-
 
 def to_ledger(transaction):
     result = "; {0}\n".format(transaction.row)
-    result += "{0} {1}\n".format(transaction.date, transaction.description)
+    result += "{0} *{1}\n".format(transaction.date, transaction.description)
     result += "    {0}        £{1:3}\n".format(transaction.category, transaction.debit - transaction.credit)
     result += "    Assets:TSB     £{0:3} = £{1:3}\n".format(transaction.credit - transaction.debit, transaction.balance)
 
@@ -52,7 +53,8 @@ def read_csv_file(path):
         reader = csv.reader(csv_file, dialect='excel')
 
         for row in reversed(list(islice(reader, 1, None))):
-            desc, category = lookup_category_details(row[4])
+            amount = make_decimal(row[5]) - make_decimal(row[6])
+            desc, category = lookup_category_details(row[4], amount)
             yield Transaction(
                 date=datetime.strptime(row[0], "%d/%m/%Y").strftime("%Y/%m/%d"),
                 description=desc,
